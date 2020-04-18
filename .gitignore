@@ -1,0 +1,15 @@
+bin/
+obj/
+
+.vs/
+
+*.suo
+*.sdf
+*.opensdf
+*.db
+*.opendb
+*.exe
+*.pdb
+*.user
+*.filters
+*.log
