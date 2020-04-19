@@ -33,9 +33,9 @@
             this.trayIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.trayMenuExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.lobbyTimer = new System.Windows.Forms.Timer(this.components);
+            this.lobbyRequestTimer = new System.Windows.Forms.Timer(this.components);
             this.toolStrip = new System.Windows.Forms.ToolStrip();
-            this.toolStripRefresh = new System.Windows.Forms.ToolStripButton();
+            this.requestLobbiesBtn = new System.Windows.Forms.ToolStripButton();
             this.steamTimer = new System.Windows.Forms.Timer(this.components);
             this.lobbiesView = new System.Windows.Forms.ListView();
             this.mmHostName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -51,18 +51,15 @@
             this.histLevelName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.histPlayers = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.histTimestamp = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.tabStats = new System.Windows.Forms.TabPage();
-            this.statsView = new System.Windows.Forms.ListView();
-            this.statKey = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.statValue = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabOptions = new System.Windows.Forms.TabPage();
             this.optionsGrid = new System.Windows.Forms.PropertyGrid();
+            this.redrawTimer = new System.Windows.Forms.Timer(this.components);
+            this.lobbyUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.trayMenu.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.tabControl.SuspendLayout();
             this.tabLobbies.SuspendLayout();
             this.tabHistory.SuspendLayout();
-            this.tabStats.SuspendLayout();
             this.tabOptions.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -88,29 +85,29 @@
             this.trayMenuExit.Text = "Exit";
             this.trayMenuExit.Click += new System.EventHandler(this.trayMenuExit_Click);
             // 
-            // lobbyTimer
+            // lobbyRequestTimer
             // 
-            this.lobbyTimer.Interval = 30000;
-            this.lobbyTimer.Tick += new System.EventHandler(this.lobbyUpdateTimer_Tick);
+            this.lobbyRequestTimer.Interval = 30000;
+            this.lobbyRequestTimer.Tick += new System.EventHandler(this.lobbyRequestTimer_Tick);
             // 
             // toolStrip
             // 
             this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripRefresh});
+            this.requestLobbiesBtn});
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Size = new System.Drawing.Size(484, 25);
             this.toolStrip.TabIndex = 1;
             // 
-            // toolStripRefresh
+            // requestLobbiesBtn
             // 
-            this.toolStripRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripRefresh.Image = ((System.Drawing.Image)(resources.GetObject("toolStripRefresh.Image")));
-            this.toolStripRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripRefresh.Name = "toolStripRefresh";
-            this.toolStripRefresh.Size = new System.Drawing.Size(23, 22);
-            this.toolStripRefresh.Text = "Refresh";
-            this.toolStripRefresh.Click += new System.EventHandler(this.toolStripRefresh_Click);
+            this.requestLobbiesBtn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.requestLobbiesBtn.Image = ((System.Drawing.Image)(resources.GetObject("requestLobbiesBtn.Image")));
+            this.requestLobbiesBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.requestLobbiesBtn.Name = "requestLobbiesBtn";
+            this.requestLobbiesBtn.Size = new System.Drawing.Size(23, 22);
+            this.requestLobbiesBtn.Text = "Refresh";
+            this.requestLobbiesBtn.Click += new System.EventHandler(this.requestLobbiesBtn_Click);
             // 
             // steamTimer
             // 
@@ -122,13 +119,14 @@
             this.lobbiesView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.lobbiesView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.mmHostName,
-            this.mmGameMode,
             this.mmLevelName,
+            this.mmGameMode,
             this.mmNumPlayers});
             this.lobbiesView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lobbiesView.FullRowSelect = true;
             this.lobbiesView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lobbiesView.Location = new System.Drawing.Point(3, 3);
+            this.lobbiesView.MultiSelect = false;
             this.lobbiesView.Name = "lobbiesView";
             this.lobbiesView.Size = new System.Drawing.Size(470, 404);
             this.lobbiesView.TabIndex = 2;
@@ -138,12 +136,12 @@
             // mmHostName
             // 
             this.mmHostName.Text = "Host";
-            this.mmHostName.Width = 120;
+            this.mmHostName.Width = 100;
             // 
             // mmGameMode
             // 
             this.mmGameMode.Text = "Mode";
-            this.mmGameMode.Width = 80;
+            this.mmGameMode.Width = 100;
             // 
             // mmLevelName
             // 
@@ -159,7 +157,6 @@
             // 
             this.tabControl.Controls.Add(this.tabLobbies);
             this.tabControl.Controls.Add(this.tabHistory);
-            this.tabControl.Controls.Add(this.tabStats);
             this.tabControl.Controls.Add(this.tabOptions);
             this.tabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl.Location = new System.Drawing.Point(0, 25);
@@ -167,7 +164,6 @@
             this.tabControl.SelectedIndex = 0;
             this.tabControl.Size = new System.Drawing.Size(484, 436);
             this.tabControl.TabIndex = 2;
-            this.tabControl.SelectedIndexChanged += new System.EventHandler(this.tabControl_SelectedIndexChanged);
             // 
             // tabLobbies
             // 
@@ -196,14 +192,15 @@
             this.histView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.histView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.histHostName,
-            this.histGameMode,
             this.histLevelName,
+            this.histGameMode,
             this.histPlayers,
             this.histTimestamp});
             this.histView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.histView.FullRowSelect = true;
             this.histView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.histView.Location = new System.Drawing.Point(3, 3);
+            this.histView.MultiSelect = false;
             this.histView.Name = "histView";
             this.histView.Size = new System.Drawing.Size(470, 404);
             this.histView.TabIndex = 0;
@@ -213,12 +210,12 @@
             // histHostName
             // 
             this.histHostName.Text = "Host";
-            this.histHostName.Width = 120;
+            this.histHostName.Width = 100;
             // 
             // histGameMode
             // 
             this.histGameMode.Text = "Mode";
-            this.histGameMode.Width = 80;
+            this.histGameMode.Width = 100;
             // 
             // histLevelName
             // 
@@ -232,45 +229,8 @@
             // 
             // histTimestamp
             // 
-            this.histTimestamp.Text = "Time";
+            this.histTimestamp.Text = "Last update";
             this.histTimestamp.Width = 115;
-            // 
-            // tabStats
-            // 
-            this.tabStats.Controls.Add(this.statsView);
-            this.tabStats.Location = new System.Drawing.Point(4, 22);
-            this.tabStats.Name = "tabStats";
-            this.tabStats.Padding = new System.Windows.Forms.Padding(3);
-            this.tabStats.Size = new System.Drawing.Size(476, 410);
-            this.tabStats.TabIndex = 1;
-            this.tabStats.Text = "Stats";
-            this.tabStats.UseVisualStyleBackColor = true;
-            // 
-            // statsView
-            // 
-            this.statsView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.statsView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.statKey,
-            this.statValue});
-            this.statsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.statsView.FullRowSelect = true;
-            this.statsView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
-            this.statsView.Location = new System.Drawing.Point(3, 3);
-            this.statsView.Name = "statsView";
-            this.statsView.Size = new System.Drawing.Size(470, 404);
-            this.statsView.TabIndex = 2;
-            this.statsView.UseCompatibleStateImageBehavior = false;
-            this.statsView.View = System.Windows.Forms.View.Details;
-            // 
-            // statKey
-            // 
-            this.statKey.Text = "Key";
-            this.statKey.Width = 150;
-            // 
-            // statValue
-            // 
-            this.statValue.Text = "Value";
-            this.statValue.Width = 100;
             // 
             // tabOptions
             // 
@@ -293,6 +253,17 @@
             this.optionsGrid.Size = new System.Drawing.Size(470, 404);
             this.optionsGrid.TabIndex = 0;
             // 
+            // redrawTimer
+            // 
+            this.redrawTimer.Enabled = true;
+            this.redrawTimer.Interval = 1000;
+            this.redrawTimer.Tick += new System.EventHandler(this.redrawTimer_Tick);
+            // 
+            // lobbyUpdateTimer
+            // 
+            this.lobbyUpdateTimer.Interval = 10000;
+            this.lobbyUpdateTimer.Tick += new System.EventHandler(this.lobbyUpdateTimer_Tick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -312,7 +283,6 @@
             this.tabControl.ResumeLayout(false);
             this.tabLobbies.ResumeLayout(false);
             this.tabHistory.ResumeLayout(false);
-            this.tabStats.ResumeLayout(false);
             this.tabOptions.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -322,11 +292,11 @@
         #endregion
 
         private System.Windows.Forms.NotifyIcon trayIcon;
-        private System.Windows.Forms.Timer lobbyTimer;
+        private System.Windows.Forms.Timer lobbyRequestTimer;
         private System.Windows.Forms.ContextMenuStrip trayMenu;
         private System.Windows.Forms.ToolStripMenuItem trayMenuExit;
         private System.Windows.Forms.ToolStrip toolStrip;
-        private System.Windows.Forms.ToolStripButton toolStripRefresh;
+        private System.Windows.Forms.ToolStripButton requestLobbiesBtn;
         private System.Windows.Forms.Timer steamTimer;
         private System.Windows.Forms.ListView lobbiesView;
         private System.Windows.Forms.ColumnHeader mmHostName;
@@ -335,10 +305,6 @@
         private System.Windows.Forms.ColumnHeader mmNumPlayers;
         private System.Windows.Forms.TabControl tabControl;
         private System.Windows.Forms.TabPage tabLobbies;
-        private System.Windows.Forms.TabPage tabStats;
-        private System.Windows.Forms.ListView statsView;
-        private System.Windows.Forms.ColumnHeader statKey;
-        private System.Windows.Forms.ColumnHeader statValue;
         private System.Windows.Forms.TabPage tabHistory;
         private System.Windows.Forms.ListView histView;
         private System.Windows.Forms.ColumnHeader histHostName;
@@ -348,6 +314,8 @@
         private System.Windows.Forms.TabPage tabOptions;
         private System.Windows.Forms.PropertyGrid optionsGrid;
         private System.Windows.Forms.ColumnHeader histPlayers;
+        private System.Windows.Forms.Timer redrawTimer;
+        private System.Windows.Forms.Timer lobbyUpdateTimer;
     }
 }
 

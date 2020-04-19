@@ -20,34 +20,58 @@ namespace RFGMP
     {
         public CSteamID LobbyID;
         public string HostName;
-        public EGameMode GameMode;
         public string LevelName;
+        public EGameMode GameMode;
         public int NumPlayers;
+        public int MaxPlayers;
+        public DateTime CreateTime;
+        public DateTime UpdateTime;
+        public bool Alive;
 
-        public Lobby(CSteamID ID)
+        public Lobby(ulong rawID)
         {
-            LobbyID = ID;
+            LobbyID = new CSteamID(rawID);
+            CreateTime = DateTime.Now;
+            ReadLobbyData();
+        }
 
-            string hostplayernameStr = SteamMatchmaking.GetLobbyData(LobbyID, "hostplayername");
-            string gamemodeStr = SteamMatchmaking.GetLobbyData(LobbyID, "gamemode");
-            string levelnameStr = SteamMatchmaking.GetLobbyData(LobbyID, "levelname");
+        public void ReadLobbyData()
+        {
+            string hostplayernameData = SteamMatchmaking.GetLobbyData(LobbyID, "hostplayername");
+            string levelnameData = SteamMatchmaking.GetLobbyData(LobbyID, "levelname");
+            string gamemodeData = SteamMatchmaking.GetLobbyData(LobbyID, "gamemode");
 
-            HostName = hostplayernameStr;
-            GameMode = ParseGameMode(gamemodeStr);
-            LevelName = levelnameStr.Replace("MENU_LEVEL_", "");
+            HostName = string.IsNullOrEmpty(hostplayernameData) ? "" : hostplayernameData;
+            LevelName = string.IsNullOrEmpty(levelnameData) ? "" : levelnameData.Replace("MENU_LEVEL_", "");
+            GameMode = ParseGameMode(gamemodeData);
 
             NumPlayers = SteamMatchmaking.GetNumLobbyMembers(LobbyID);
+            MaxPlayers = Math.Max(MaxPlayers, NumPlayers);
+
+            UpdateTime = DateTime.Now;
+            Alive = true;
+
+            /*int dataCount = SteamMatchmaking.GetLobbyDataCount(lobbyID);
+            for (int i = 0; i < dataCount; i++)
+            {
+                string Key;
+                string Value;
+                SteamMatchmaking.GetLobbyDataByIndex(lobbyID, i, out Key, 255, out Value, 255);
+                Debug.WriteLine("Data#" + i + ": " + Key + " -> " + Value);
+            }*/
+        }
+
+        public bool IsValid()
+        {
+            return (
+                !string.IsNullOrEmpty(HostName)
+                && !string.IsNullOrEmpty(LevelName)
+                && GameMode != EGameMode.Unknown);
         }
 
         public override string ToString()
         {
-            return
-                LobbyID.m_SteamID.ToString() + " ; " +
-                HostName + " ; " +
-                GameMode.ToString() + " ; " +
-                LevelName + " ; " +
-                NumPlayers.ToString()
-                ;
+            return HostName + " ; " + LevelName + " ; " + GameMode.ToString();
         }
 
         public static EGameMode ParseGameMode(string Value)
@@ -65,17 +89,5 @@ namespace RFGMP
             }
             return EGameMode.Unknown;
         }
-    }
-
-    public class PersistentLobby
-    {
-        public string HostName;
-        public EGameMode GameMode;
-        public string LevelName;
-        public int NumPlayers;
-        public int MaxPlayers;
-        public DateTime CreateDate;
-        public DateTime UpdateDate;
-        public bool IsNew;
     }
 }

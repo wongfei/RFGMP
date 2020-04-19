@@ -1,7 +1,4 @@
-﻿using System;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Configuration;
+﻿using System.ComponentModel;
 
 namespace RFGMP
 {
@@ -22,7 +19,10 @@ namespace RFGMP
         public bool UpdateWhilePlaying { get; set; } = true;
 
         [Category("App")]
-        public int LobbyRefreshSec { get; set; } = 30;
+        public int LobbyRequestInterval { get; set; } = 30;
+
+        [Category("App")]
+        public int LobbyUpdateInterval { get; set; } = 10;
 
         // NOTIFY
 
@@ -30,21 +30,15 @@ namespace RFGMP
         public bool NotifyEnabled { get; set; } = true;
 
         [Category("Notify")]
-        public int NotifyBalloonSec { get; set; } = 1;
+        public int NotifyBalloonTimeout { get; set; } = 1;
 
         [Category("Notify")]
-        public int NotifyMinDurationSec { get; set; } = 30;
-
-        [Category("Notify")]
-        public int NotifyMinLobbies { get; set; } = 1;
+        public int NotifyInterval { get; set; } = 60;
 
         [Category("Notify")]
         public int NotifyMinPlayers { get; set; } = 1;
 
         // TRAY
-
-        [Category("Tray")]
-        public int TrayMinLobbies { get; set; } = 1;
 
         [Category("Tray")]
         public int TrayMinPlayers { get; set; } = 1;
