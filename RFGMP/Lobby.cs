@@ -27,12 +27,13 @@ namespace RFGMP
         public DateTime CreateTime;
         public DateTime UpdateTime;
         public bool Alive;
+        public bool UpdatePending;
+        public bool UserNotified;
 
         public Lobby(ulong rawID)
         {
             LobbyID = new CSteamID(rawID);
             CreateTime = DateTime.Now;
-            ReadLobbyData();
         }
 
         public void ReadLobbyData()
@@ -42,7 +43,7 @@ namespace RFGMP
             string gamemodeData = SteamMatchmaking.GetLobbyData(LobbyID, "gamemode");
 
             HostName = string.IsNullOrEmpty(hostplayernameData) ? "" : hostplayernameData;
-            LevelName = string.IsNullOrEmpty(levelnameData) ? "" : levelnameData.Replace("MENU_LEVEL_", "");
+            LevelName = ParseLevelName(levelnameData);
             GameMode = ParseGameMode(gamemodeData);
 
             NumPlayers = SteamMatchmaking.GetNumLobbyMembers(LobbyID);
@@ -50,6 +51,7 @@ namespace RFGMP
 
             UpdateTime = DateTime.Now;
             Alive = true;
+            UpdatePending = false;
 
             /*int dataCount = SteamMatchmaking.GetLobbyDataCount(lobbyID);
             for (int i = 0; i < dataCount; i++)
@@ -59,6 +61,13 @@ namespace RFGMP
                 SteamMatchmaking.GetLobbyDataByIndex(lobbyID, i, out Key, 255, out Value, 255);
                 Debug.WriteLine("Data#" + i + ": " + Key + " -> " + Value);
             }*/
+        }
+
+        public void MarkDead()
+        {
+            Alive = false;
+            UpdatePending = false;
+            UserNotified = false;
         }
 
         public bool IsValid()
@@ -74,9 +83,9 @@ namespace RFGMP
             return HostName + " ; " + LevelName + " ; " + GameMode.ToString();
         }
 
-        public static EGameMode ParseGameMode(string Value)
+        public static EGameMode ParseGameMode(string value)
         {
-            switch (Value) // LOL, indian style
+            switch (value) // LOL, indian style
             {
                 case "1": return EGameMode.Anarchy;
                 case "2": return EGameMode.TeamAnarchy;
@@ -88,6 +97,26 @@ namespace RFGMP
                 case "8": return EGameMode.Demolition;
             }
             return EGameMode.Unknown;
+        }
+
+        public static string ParseLevelName(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            value = value.Replace("MENU_LEVEL_", "").Replace("MENU_WRECKING_CREW_MAP_NAME_", "");
+            switch (value)
+            {
+                case "WC1": value = "COMPLEX"; break;
+                case "WC2": value = "WATCH TOWER"; break;
+                case "WC3": value = "SCRAPHEAP"; break;
+                case "WC4": value = "VISTA"; break;
+                case "WC5": value = "FORTRESS"; break;
+                case "WC6": value = "FACTORY"; break;
+                case "WC7": value = "GULCH"; break;
+                case "WC8": value = "CASCADE"; break;
+                case "WC9": value = "TRANSMISSION"; break;
+                case "WC10": value = "PIPELINE"; break;
+            }
+            return value;
         }
     }
 }

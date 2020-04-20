@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace RFGMP
 {
@@ -13,16 +14,15 @@ namespace RFGMP
         //[IntegerValidator(MinValue = 10, MaxValue = 1000)]
 
         [Category("App")]
-        public bool AutostartEnabled { get; set; } = false;
-
-        [Category("App")]
         public bool UpdateWhilePlaying { get; set; } = true;
 
         [Category("App")]
-        public int LobbyRequestInterval { get; set; } = 30;
+        [Range(1, 3600)]
+        public int LobbyRequestInterval { get; set; } = 30; // sec
 
         [Category("App")]
-        public int LobbyUpdateInterval { get; set; } = 10;
+        [Range(1, 3600)]
+        public int LobbyUpdateInterval { get; set; } = 5; // sec
 
         // NOTIFY
 
@@ -30,22 +30,35 @@ namespace RFGMP
         public bool NotifyEnabled { get; set; } = true;
 
         [Category("Notify")]
-        public int NotifyBalloonTimeout { get; set; } = 1;
+        [Range(1, 3600)]
+        public int NotifyInterval { get; set; } = 60; // sec
 
         [Category("Notify")]
-        public int NotifyInterval { get; set; } = 60;
+        [Range(1, 3600)]
+        public int NotifyBalloonTimeout { get; set; } = 1; // sec
 
         [Category("Notify")]
+        [Range(1, 3600)]
+        public int NotifyMinLobbyDuration { get; set; } = 10; // sec
+
+        [Category("Notify")]
+        [Range(0, int.MaxValue)]
         public int NotifyMinPlayers { get; set; } = 1;
 
         // TRAY
 
         [Category("Tray")]
+        [Range(0, int.MaxValue)]
         public int TrayMinPlayers { get; set; } = 1;
 
         // ADVANCED
 
         [Category("Advanced")]
-        public int SteamTickMs { get; set; } = 200;
+        [Range(100, 1000)]
+        public int SteamTickMs { get; set; } = 200; // millisec
+
+        [Category("Advanced")]
+        [Range(100, 10000)]
+        public int RedrawTickMs { get; set; } = 1000; // millisec
     }
 }

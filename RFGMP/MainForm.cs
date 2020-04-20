@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
@@ -14,6 +15,7 @@ namespace RFGMP
     {
         private bool appShutdownFlag = false;
         private Options options = new Options();
+        private Stats stats = new Stats();
         private DateTime lastNotifTime = new DateTime();
 
         #region FORM
@@ -24,17 +26,15 @@ namespace RFGMP
 
             SetDoubleBuffered(lobbiesView, true);
             SetDoubleBuffered(histView, true);
-            optionsGrid.SelectedObject = options;
-        }
 
-        private void ShowError(string text)
-        {
-            MessageBox.Show(text, "RFGMP ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            optionsGrid.SelectedObject = options;
+            statsGrid.SelectedObject = stats;
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
             LoadConfig();
+            ApplyOptions();
 
             if (!InitSteam())
             {
@@ -43,8 +43,7 @@ namespace RFGMP
                 return;
             }
 
-            InitNotifier();
-            InitLobby();
+            RequestLobbies();
         }
 
         private void ShutdownApp()
@@ -85,6 +84,12 @@ namespace RFGMP
             ShutdownApp();
         }
 
+        private void ShowError(string text)
+        {
+            //MessageBox.Show(text, "RFGMP ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(text);
+        }
+
         #endregion
 
         #region STEAM
@@ -104,6 +109,7 @@ namespace RFGMP
             if (!steamInitialized)
                 return false;
 
+            // must launch with "-debug_steamapi"
             steamWarningCallback = new SteamAPIWarningMessageHook_t(OnSteamWarning);
             SteamClient.SetWarningMessageHook(steamWarningCallback);
 
@@ -132,7 +138,10 @@ namespace RFGMP
         private void steamTimer_Tick(object sender, EventArgs e)
         {
             if (steamInitialized)
+            {
+                UpdateLiveLobbies();
                 SteamAPI.RunCallbacks();
+            }
         }
 
         private static void OnSteamWarning(int nSeverity, System.Text.StringBuilder pchDebugText)
@@ -146,13 +155,7 @@ namespace RFGMP
 
         private Dictionary<ulong, Lobby> lobbies = new Dictionary<ulong, Lobby>();
 
-        private void InitLobby()
-        {
-            lobbyUpdateTimer.Start();
-            RequestLobbies();
-        }
-
-        private void requestLobbiesBtn_Click(object sender, EventArgs e)
+        private void lobbyRequestBtn_Click(object sender, EventArgs e)
         {
             RequestLobbies();
         }
@@ -163,27 +166,18 @@ namespace RFGMP
                 RequestLobbies();
         }
 
-        private void lobbyUpdateTimer_Tick(object sender, EventArgs e)
-        {
-            foreach (var lobby in lobbies.Values)
-            {
-                if (lobby.Alive && (DateTime.Now - lobby.UpdateTime).TotalSeconds > options.LobbyUpdateInterval)
-                {
-                    RequestLobbyData(lobby.LobbyID);
-                }
-            }
-        }
-
         private void RequestLobbies()
         {
-            requestLobbiesBtn.Enabled = false;
-            lobbyRequestTimer.Stop();
+            lobbyRequestBtn.Enabled = false;
+            lobbyRequestTimer.Enabled = false;
 
+            stats.RequestLobbyListCount++;
             SteamMatchmaking.RequestLobbyList();
         }
 
         private void OnLobbyMatchList(LobbyMatchList_t result)
         {
+            stats.OnLobbyMatchListCount++;
             Debug.WriteLine("OnLobbyMatchList: count=" + result.m_nLobbiesMatching);
 
             for (int i = 0; i < result.m_nLobbiesMatching; i++)
@@ -199,13 +193,31 @@ namespace RFGMP
                 }
             }
 
-            requestLobbiesBtn.Enabled = true;
-            lobbyRequestTimer.Start();
+            lobbyRequestBtn.Enabled = true;
+            lobbyRequestTimer.Enabled = true;
+
+            lastUpdateLabel.Text = DateTime.Now.ToString("HH:mm", CultureInfo.InvariantCulture);
+        }
+
+        private void UpdateLiveLobbies()
+        {
+            foreach (var lobby in lobbies.Values)
+            {
+                if (lobby.Alive && !lobby.UpdatePending && (DateTime.Now - lobby.UpdateTime).TotalSeconds > options.LobbyUpdateInterval)
+                {
+                    RequestLobbyData(lobby.LobbyID);
+                }
+            }
         }
 
         private void RequestLobbyData(CSteamID lobbyID)
         {
-            if (!SteamMatchmaking.RequestLobbyData(lobbyID))
+            stats.RequestLobbyDataCount++;
+            if (SteamMatchmaking.RequestLobbyData(lobbyID))
+            {
+                SetUpdatePending(lobbyID.m_SteamID, true);
+            }
+            else
             {
                 MarkLobbyDead(lobbyID.m_SteamID);
             }
@@ -218,6 +230,7 @@ namespace RFGMP
 
             if (result.m_bSuccess == 1)
             {
+                stats.OnLobbyDataUpdateCount++;
                 UpdateLobby(rawID);
             }
             else
@@ -228,10 +241,11 @@ namespace RFGMP
 
         private void UpdateLobby(ulong rawID)
         {
-            Lobby lobby;
             if (!lobbies.ContainsKey(rawID))
             {
-                lobby = new Lobby(rawID);
+                var lobby = new Lobby(rawID);
+                lobby.ReadLobbyData();
+
                 if (lobby.IsValid())
                 {
                     Debug.WriteLine("AddLobby: rawID=" + rawID.ToString() + " # " + lobby.ToString());
@@ -240,8 +254,15 @@ namespace RFGMP
             }
             else
             {
-                lobby = lobbies[rawID];
-                lobby.ReadLobbyData();
+                lobbies[rawID].ReadLobbyData();
+            }
+        }
+
+        private void SetUpdatePending(ulong rawID, bool value)
+        {
+            if (lobbies.ContainsKey(rawID))
+            {
+                lobbies[rawID].UpdatePending = value;
             }
         }
 
@@ -251,7 +272,7 @@ namespace RFGMP
 
             if (lobbies.ContainsKey(rawID))
             {
-                lobbies[rawID].Alive = false;
+                lobbies[rawID].MarkDead();
             }
         }
 
@@ -271,6 +292,7 @@ namespace RFGMP
         {
             UpdateLobbiesView();
             UpdateHistoryView();
+            statsGrid.Refresh();
         }
 
         private void UpdateLobbiesView()
@@ -302,6 +324,9 @@ namespace RFGMP
 
             bool trayActive = (totalPlayers >= options.TrayMinPlayers);
             trayIcon.Icon = trayActive ? RFGMP.Resources.hammer_on : RFGMP.Resources.hammer_ghost;
+
+            stats.MaxLiveLobbies = Math.Max(stats.MaxLiveLobbies, totalLobbies);
+            stats.MaxLivePlayers = Math.Max(stats.MaxLivePlayers, totalPlayers);
         }
 
         private void UpdateHistoryView()
@@ -324,14 +349,11 @@ namespace RFGMP
                 string playersStr = lobby.NumPlayers.ToString() + " (" + lobby.MaxPlayers.ToString() + ")";
 
                 histView.Items.Add(new ListViewItem(new string[] { lobby.HostName, lobby.LevelName, lobby.GameMode.ToString(), playersStr, ts }));
+
+                stats.MaxMatchDuration = Math.Max(stats.MaxMatchDuration, totalSec);
             }
 
             histView.EndUpdate();
-        }
-
-        private void InitNotifier()
-        {
-            lastNotifTime = DateTime.Now.Subtract(new TimeSpan(0, 0, options.NotifyInterval));
         }
 
         private void NotifyOnActivity()
@@ -342,9 +364,9 @@ namespace RFGMP
 
                 foreach (var lobby in lobbies.Values)
                 {
-                    // count only recently created lobbies
-                    if (lobby.Alive && (DateTime.Now - lobby.CreateTime).TotalSeconds <= options.LobbyUpdateInterval)
+                    if (lobby.Alive && !lobby.UserNotified && (DateTime.Now - lobby.CreateTime).TotalSeconds >= options.NotifyMinLobbyDuration)
                     {
+                        lobby.UserNotified = true;
                         numActivePlayers += lobby.NumPlayers;
                     }
                 }
@@ -353,6 +375,7 @@ namespace RFGMP
                 {
                     Debug.WriteLine("NotifyOnActivity");
                     lastNotifTime = DateTime.Now;
+                    stats.NumNotifications++;
 
                     //if (!!IsGameRunning())
                     {
@@ -368,7 +391,53 @@ namespace RFGMP
 
         #endregion
 
-        #region UTILS
+        #region OPTIONS
+
+        private void optionsGrid_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
+        {
+            ApplyOptions();
+        }
+
+        private void ApplyOptions()
+        {
+            ValidateOptions();
+
+            steamTimer.Interval = options.SteamTickMs;
+            redrawTimer.Interval = options.RedrawTickMs;
+            lobbyRequestTimer.Interval = options.LobbyRequestInterval * 1000;
+
+            if (lastNotifTime == default)
+            {
+                lastNotifTime = DateTime.Now.Subtract(new TimeSpan(0, 0, options.NotifyInterval));
+            }
+        }
+
+        private void ValidateOptions()
+        {
+            PropertyInfo[] properties = typeof(Options).GetProperties();
+            foreach (PropertyInfo property in properties)
+            {
+                var value = property.GetValue(options) as IComparable;
+                if (value != null)
+                {
+                    var range = property.GetCustomAttribute<RangeAttribute>();
+                    if (range != null)
+                    {
+                        var min = range.Minimum as IComparable;
+                        var max = range.Maximum as IComparable;
+
+                        if (value.CompareTo(min) < 0)
+                            property.SetValue(options, min);
+                        else if (value.CompareTo(max) > 0)
+                            property.SetValue(options, max);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region CONFIG
 
         private void LoadConfig()
         {
@@ -389,9 +458,6 @@ namespace RFGMP
                 }
                 catch (Exception) { }
             }
-
-            steamTimer.Interval = options.SteamTickMs;
-            lobbyRequestTimer.Interval = options.LobbyRequestInterval * 1000;
         }
 
         private void SaveConfig()
@@ -455,10 +521,9 @@ namespace RFGMP
             return value;
         }
 
-        private bool IsGameRunning()
-        {
-            return Process.GetProcessesByName("rfg").Length > 0;
-        }
+        #endregion
+
+        #region UTILS
 
         private void SetDoubleBuffered(ListView listView, bool value)
         {
@@ -467,8 +532,13 @@ namespace RFGMP
                 .SetValue(listView, value);
         }
 
+        private bool IsGameRunning()
+        {
+            return Process.GetProcessesByName("rfg").Length > 0;
+        }
+
         #endregion
 
-        ///
-    }
-}
+    } // MainForm
+
+} // namespace
