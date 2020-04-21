@@ -36,6 +36,8 @@
             this.lobbyRequestTimer = new System.Windows.Forms.Timer(this.components);
             this.toolStrip = new System.Windows.Forms.ToolStrip();
             this.lobbyRequestBtn = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.lastUpdateLabel = new System.Windows.Forms.ToolStripLabel();
             this.steamTimer = new System.Windows.Forms.Timer(this.components);
             this.lobbiesView = new System.Windows.Forms.ListView();
             this.mmHostName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -53,11 +55,10 @@
             this.histTimestamp = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabOptions = new System.Windows.Forms.TabPage();
             this.optionsGrid = new System.Windows.Forms.PropertyGrid();
-            this.redrawTimer = new System.Windows.Forms.Timer(this.components);
             this.tabStats = new System.Windows.Forms.TabPage();
             this.statsGrid = new System.Windows.Forms.PropertyGrid();
-            this.lastUpdateLabel = new System.Windows.Forms.ToolStripLabel();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.redrawTimer = new System.Windows.Forms.Timer(this.components);
+            this.runGameBtn = new System.Windows.Forms.ToolStripButton();
             this.trayMenu.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -98,8 +99,9 @@
             // 
             this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lobbyRequestBtn,
+            this.lastUpdateLabel,
             this.toolStripSeparator1,
-            this.lastUpdateLabel});
+            this.runGameBtn});
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Size = new System.Drawing.Size(484, 25);
@@ -114,6 +116,17 @@
             this.lobbyRequestBtn.Size = new System.Drawing.Size(23, 22);
             this.lobbyRequestBtn.Text = "Refresh";
             this.lobbyRequestBtn.Click += new System.EventHandler(this.lobbyRequestBtn_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
+            // 
+            // lastUpdateLabel
+            // 
+            this.lastUpdateLabel.Name = "lastUpdateLabel";
+            this.lastUpdateLabel.Size = new System.Drawing.Size(34, 22);
+            this.lastUpdateLabel.Text = "00:00";
             // 
             // steamTimer
             // 
@@ -262,12 +275,6 @@
             this.optionsGrid.ToolbarVisible = false;
             this.optionsGrid.PropertyValueChanged += new System.Windows.Forms.PropertyValueChangedEventHandler(this.optionsGrid_PropertyValueChanged);
             // 
-            // redrawTimer
-            // 
-            this.redrawTimer.Enabled = true;
-            this.redrawTimer.Interval = 1000;
-            this.redrawTimer.Tick += new System.EventHandler(this.redrawTimer_Tick);
-            // 
             // tabStats
             // 
             this.tabStats.Controls.Add(this.statsGrid);
@@ -290,16 +297,21 @@
             this.statsGrid.TabIndex = 0;
             this.statsGrid.ToolbarVisible = false;
             // 
-            // lastUpdateLabel
+            // redrawTimer
             // 
-            this.lastUpdateLabel.Name = "lastUpdateLabel";
-            this.lastUpdateLabel.Size = new System.Drawing.Size(34, 22);
-            this.lastUpdateLabel.Text = "00:00";
+            this.redrawTimer.Enabled = true;
+            this.redrawTimer.Interval = 1000;
+            this.redrawTimer.Tick += new System.EventHandler(this.redrawTimer_Tick);
             // 
-            // toolStripSeparator1
+            // runGameBtn
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
+            this.runGameBtn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.runGameBtn.Image = ((System.Drawing.Image)(resources.GetObject("runGameBtn.Image")));
+            this.runGameBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.runGameBtn.Name = "runGameBtn";
+            this.runGameBtn.Size = new System.Drawing.Size(23, 22);
+            this.runGameBtn.Text = "Play";
+            this.runGameBtn.Click += new System.EventHandler(this.runGameBtn_Click);
             // 
             // MainForm
             // 
@@ -357,6 +369,7 @@
         private System.Windows.Forms.PropertyGrid statsGrid;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripLabel lastUpdateLabel;
+        private System.Windows.Forms.ToolStripButton runGameBtn;
     }
 }
 

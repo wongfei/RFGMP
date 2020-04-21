@@ -4,9 +4,10 @@ using System.ComponentModel.DataAnnotations;
 using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
-
+using Microsoft.Win32;
 using Steamworks;
 
 namespace RFGMP
@@ -28,7 +29,7 @@ namespace RFGMP
             SetDoubleBuffered(histView, true);
 
             optionsGrid.SelectedObject = options;
-            statsGrid.SelectedObject = stats;
+            statsGrid.SelectedObject = stats; // TODO: make readonly
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
@@ -309,7 +310,7 @@ namespace RFGMP
 
             foreach (var lobby in sorted)
             {
-                if (lobby.Alive && ((DateTime.Now - lobby.UpdateTime).TotalSeconds <= options.LobbyUpdateInterval))
+                if (lobby.Alive) // && ((DateTime.Now - lobby.UpdateTime).TotalSeconds <= options.LobbyUpdateInterval))
                 {
                     var cols = new string[] { lobby.HostName, lobby.LevelName, lobby.GameMode.ToString(), lobby.NumPlayers.ToString() };
                     var item = new ListViewItem(cols);
@@ -386,6 +387,23 @@ namespace RFGMP
                         trayIcon.ShowBalloonTip(options.NotifyBalloonTimeout * 1000);
                     }
                 }
+            }
+        }
+
+        #endregion
+
+        #region PLAY
+
+        private void runGameBtn_Click(object sender, EventArgs e)
+        {
+            var exePath = GetGameExe();
+            if (File.Exists(exePath))
+            {
+                var info = new ProcessStartInfo();
+                info.FileName = exePath;
+                info.WorkingDirectory = GetGamePath();
+
+                Process.Start(info);
             }
         }
 
@@ -530,6 +548,32 @@ namespace RFGMP
             listView.GetType()
                 .GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(listView, value);
+        }
+
+        private string GetSteamPath()
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey("Software\\Valve\\Steam"))
+            {
+                if (key != null)
+                {
+                    var steamPath = key.GetValue("SteamPath");
+                    if (steamPath != null)
+                    {
+                        return Convert.ToString(steamPath);
+                    }
+                }
+            }
+            return "";
+        }
+
+        private string GetGamePath()
+        {
+            return Path.Combine(GetSteamPath(), "steamapps", "common", "Red Faction Guerrilla Re-MARS-tered");
+        }
+
+        private string GetGameExe()
+        {
+            return Path.Combine(GetGamePath(), "rfg.exe");
         }
 
         private bool IsGameRunning()

@@ -5,13 +5,11 @@ namespace RFGMP
 {
     public class Options
     {
-        //[Browsable(bool)] – to show property or not
-        //[ReadOnly(bool)] – possibility to edit property
-        //[Category(string)] – groups of property
-        //[Description(string)] – property description.It is something like a hint.
-        //[DisplayName(string)] – display property
-        //[Range(10, 1000)]
-        //[IntegerValidator(MinValue = 10, MaxValue = 1000)]
+        //[Browsable(bool)] to show property or not
+        //[ReadOnly(bool)] possibility to edit property
+        //[Category(string)] groups of property
+        //[Description(string)] property description.It is something like a hint.
+        //[DisplayName(string)] display property
 
         [Category("App")]
         public bool UpdateWhilePlaying { get; set; } = true;
@@ -27,11 +25,11 @@ namespace RFGMP
         // NOTIFY
 
         [Category("Notify")]
-        public bool NotifyEnabled { get; set; } = true;
+        public bool NotifyEnabled { get; set; } = false;
 
         [Category("Notify")]
         [Range(1, 3600)]
-        public int NotifyInterval { get; set; } = 60; // sec
+        public int NotifyInterval { get; set; } = 5 * 60; // sec
 
         [Category("Notify")]
         [Range(1, 3600)]
